@@ -76,11 +76,42 @@ class ViewController: UITableViewController {
         present(alertController, animated: true, completion: nil)
     }
     
-    
+    // Set up Realm and deinit
     func setupRealm() {
+        let username = "myleevictor@gmail.com"
+        let password = "Realmofvictory88"
         
-        
-        
+        SyncUser.logIn(with: .usernamePassword(username: username, password: password, register: false), server: URL(string: "http://127.0.0.1:9080")!) { user, error in
+            if error != nil {
+            fatalError(error as! String)
+            }
+            
+            DispatchQueue.main.async {
+                // Open Realm
+                if let user = user {
+                    let configuration = Realm.Configuration(syncConfiguration: SyncConfiguration(user: user, realmURL: URL(string: "realm://127.0.0.1:9080/~/realmtasks")!))
+                    // Make the try! force optional
+                    self.realm = try! Realm(configuration: configuration)
+                }
+                // Show initial tasks
+                func updateList() {
+                    if self.items.realm == nil, let list = self.realm.objects(TaskList.self).first {
+                        self.items = list.items
+                    }
+                    self.tableView.reloadData()
+                }
+                updateList()
+                
+                // Notify us when Realm changes
+                self.notificationToken = self.realm.addNotificationBlock { _ in
+                    updateList()
+                }
+            }
+        }
+    }
+
+    deinit {
+        notificationToken.stop()
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
