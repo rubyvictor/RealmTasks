@@ -53,28 +53,14 @@ class ViewController: UITableViewController {
     }
 
     var cell = "cell"
-    fileprivate func setupUI() {
+    func setupUI() {
         navigationItem.title = "My Tasks"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cell)
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(handleAdd))
+        navigationItem.leftBarButtonItem = editButtonItem
     }
 
-    func handleAdd() {
-        let alertController = UIAlertController(title: "New Task", message: "Enter New Task Name", preferredStyle: .alert)
-        var alertTextField = UITextField()
-        alertController.addTextField { (textField) in
-            alertTextField = textField
-            alertTextField.placeholder = "Task Name"
-        }
-        
-        alertController.addAction(UIAlertAction(title: "Add", style: .default, handler: { (action) in
-            print(action)
-            guard let text = alertTextField.text, !text.isEmpty else { return }
-            self.items.append(Task(value: ["text":text]))
-            self.tableView.reloadData()
-        }))
-        present(alertController, animated: true, completion: nil)
-    }
+    
     
     // Set up Realm and deinit
     func setupRealm() {
@@ -112,6 +98,47 @@ class ViewController: UITableViewController {
 
     deinit {
         notificationToken.stop()
+    }
+    
+    func handleAdd() {
+        let alertController = UIAlertController(title: "New Task", message: "Enter Task Name", preferredStyle: .alert)
+        var alertTextField: UITextField!
+        alertController.addTextField { textField in
+            alertTextField = textField
+            textField.placeholder = "Task Name"
+        }
+        alertController.addAction(UIAlertAction(title: "Add", style: .default) { _ in
+            
+            DispatchQueue.main.async {
+                guard let text = alertTextField.text , !text.isEmpty else { return }
+                
+                let items = self.items
+                try! items.realm?.write {
+                    items.insert(Task(value: ["text": text]), at: items.filter("completed = false").count)
+                }
+            }
+            
+//                self.items.append(Task(value: ["text": text]))
+//                self.tableView.reloadData()
+        })
+        present(alertController, animated: true, completion: nil)
+    }
+    
+
+    override func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        try! items.realm?.write {
+            items.move(from: sourceIndexPath.row, to: destinationIndexPath.row)
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCellEditingStyle {
+        if isEditing == true {
+            try! realm.write {
+                    let item = items[indexPath.row]
+                    realm.delete(item)
+            }
+        }
+        return .delete
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
