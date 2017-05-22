@@ -29,6 +29,8 @@ final class Task: Object {
 class ViewController: UITableViewController {
 
     var items = List<Task>()
+    var notificationToken: NotificationToken!
+    var realm: Realm!
     
     let textlabel: UILabel = {
         let label = UILabel()
@@ -43,17 +45,40 @@ class ViewController: UITableViewController {
         super.viewDidLoad()
         
         setupUI()
+        setupRealm()
         
-        add()
+        // initial dummy task
 //        items.append(Task(value: ["text":"My First Task"]))
         
-        // Do any additional setup after loading the view, typically from a nib.
     }
 
     var cell = "cell"
     fileprivate func setupUI() {
         navigationItem.title = "My Tasks"
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cell)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(handleAdd))
+    }
+
+    func handleAdd() {
+        let alertController = UIAlertController(title: "New Task", message: "Enter New Task Name", preferredStyle: .alert)
+        var alertTextField = UITextField()
+        alertController.addTextField { (textField) in
+            alertTextField = textField
+            alertTextField.placeholder = "Task Name"
+        }
+        
+        alertController.addAction(UIAlertAction(title: "Add", style: .default, handler: { (action) in
+            print(action)
+            guard let text = alertTextField.text, !text.isEmpty else { return }
+            self.items.append(Task(value: ["text":text]))
+            self.tableView.reloadData()
+        }))
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    
+    func setupRealm() {
+        
         
         
     }
@@ -72,26 +97,7 @@ class ViewController: UITableViewController {
         return cell
     }
     
-    func add() {
-        let alertController = UIAlertController(title: "New Task", message: "Enter New Task Name", preferredStyle: .alert)
-        var alertTextField = UITextField()
-        alertController.addTextField { (textField) in
-            alertTextField = textField
-            alertTextField.placeholder = "Task Name"
-        }
-        
-        alertController.addAction(UIAlertAction(title: "Add", style: .default, handler: { (action) in
-            print(action)
-            guard let text = alertTextField.text, !text.isEmpty else { return }
-            self.items.append(Task(value: ["text":text]))
-            self.tableView.reloadData()
-        }))
-        
-        present(alertController, animated: true, completion: nil)
-        
-        
-        
-    }
+
 
 
 }
