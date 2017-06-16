@@ -34,7 +34,8 @@ class ViewController: UITableViewController {
     
     let textlabel: UILabel = {
         let label = UILabel()
-        
+        label.textColor = .black
+        label.backgroundColor = .white
        
         return label
     }()
@@ -46,6 +47,7 @@ class ViewController: UITableViewController {
         
         setupUI()
         setupRealm()
+        view.backgroundColor = .yellow
         
         // initial dummy task
 //        items.append(Task(value: ["text":"My First Task"]))
@@ -68,8 +70,8 @@ class ViewController: UITableViewController {
         let password = "Realmofvictory88"
         
         SyncUser.logIn(with: .usernamePassword(username: username, password: password, register: false), server: URL(string: "http://127.0.0.1:9080")!) { user, error in
-            if error != nil {
-            fatalError(error as! String)
+            if let error = error {
+            print("Failed to log in to Realm", error)
             }
             
             DispatchQueue.main.async {
@@ -81,7 +83,10 @@ class ViewController: UITableViewController {
                 }
                 // Show initial tasks
                 func updateList() {
-                    if self.items.realm == nil, let list = self.realm.objects(TaskList.self).first {
+                    
+                    guard let list = self.realm.objects(TaskList.self).first else { return }
+                    
+                    if self.items.realm == nil {
                         self.items = list.items
                     }
                     self.tableView.reloadData()
@@ -108,15 +113,12 @@ class ViewController: UITableViewController {
             textField.placeholder = "Task Name"
         }
         alertController.addAction(UIAlertAction(title: "Add", style: .default) { _ in
-            
-            DispatchQueue.main.async {
                 guard let text = alertTextField.text , !text.isEmpty else { return }
                 
                 let items = self.items
                 try! items.realm?.write {
                     items.insert(Task(value: ["text": text]), at: items.filter("completed = false").count)
                 }
-            }
             
 //                self.items.append(Task(value: ["text": text]))
 //                self.tableView.reloadData()
